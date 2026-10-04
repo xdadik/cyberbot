@@ -10,11 +10,13 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
+    PreCheckoutQueryHandler,
     filters,
 )
 
 from config import BOT_TOKEN
-from handlers import common, lessons, media, notes, reminders
+from handlers import admin, common, lessons, media, notes, reminders, vip
+from handlers.helpers import banned_guard
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -25,7 +27,11 @@ log = logging.getLogger("uzbhackhub")
 
 
 async def post_init(application: Application) -> None:
-    """Set the command menu and restore pending reminders after a restart."""
+    """Branding, command menu and restoring pending reminders after restart."""
+    await application.bot.set_my_name("UZBHackHub 🛡️")
+    await application.bot.set_my_description(
+        "Bilingual cybersecurity academy: lessons, quizzes, XP, notes, reminders & VIP. 🇬🇧/🇺🇿"
+    )
     await application.bot.set_my_commands(
         [
             ("start", "Main menu / Asosiy menyu"),
@@ -34,7 +40,7 @@ async def post_init(application: Application) -> None:
             ("remind", "Set a reminder: /remind 30m text"),
             ("profile", "Your stats"),
             ("lang", "Switch language (EN/UZ)"),
-            ("premium", "Premium plans"),
+            ("premium", "VIP Premium"),
             ("help", "How to use the bot"),
         ]
     )
@@ -56,42 +62,65 @@ def main() -> None:
     application.add_handler(CommandHandler("help", common.help_command))
     application.add_handler(CommandHandler("profile", common.profile))
     application.add_handler(CommandHandler("lang", common.lang_command))
-    application.add_handler(CommandHandler("premium", common.premium))
+    application.add_handler(CommandHandler("premium", vip.premium_command))
     application.add_handler(CommandHandler("lessons", lessons_command))
     application.add_handler(CommandHandler("notes", notes_command))
     application.add_handler(CommandHandler("remind", reminders.remind_command))
     application.add_handler(CommandHandler("cancel", cancel_command))
+    application.add_handler(CommandHandler("admin", admin.admin_command))
 
     # ---------------------------------------------------- callback queries --
-    application.add_handler(CallbackQueryHandler(common.set_language, pattern=r"^setlang:(en|uz)$"))
-    application.add_handler(CallbackQueryHandler(lessons.show_lessons, pattern=r"^menu:lessons$"))
-    application.add_handler(CallbackQueryHandler(lessons.show_module, pattern=r"^module:([A-Za-z0-9_]+)$"))
-    application.add_handler(CallbackQueryHandler(lessons.view_lesson, pattern=r"^lesson:view:([A-Za-z0-9_]+)$"))
-    application.add_handler(CallbackQueryHandler(lessons.start_quiz, pattern=r"^lesson:quiz:([A-Za-z0-9_]+)$"))
-    application.add_handler(CallbackQueryHandler(lessons.answer_question,
+    # Language
+    application.add_handler(CallbackQueryHandler(banned_guard(common.set_language), pattern=r"^setlang:(en|uz)$"))
+    # Lessons & quiz
+    application.add_handler(CallbackQueryHandler(banned_guard(lessons.show_lessons), pattern=r"^menu:lessons$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(lessons.show_module), pattern=r"^module:([A-Za-z0-9_]+)$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(lessons.view_lesson), pattern=r"^lesson:view:([A-Za-z0-9_]+)$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(lessons.start_quiz), pattern=r"^lesson:quiz:([A-Za-z0-9_]+)$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(lessons.answer_question),
                                                  pattern=r"^lesson:q:([A-Za-z0-9_]+):(\d+):(\d+)$"))
-    application.add_handler(CallbackQueryHandler(notes.add_note_start, pattern=r"^note:add$"))
-    application.add_handler(CallbackQueryHandler(notes.list_notes, pattern=r"^note:list$"))
-    application.add_handler(CallbackQueryHandler(notes.delete_note, pattern=r"^note:del:(\d+)$"))
-    application.add_handler(CallbackQueryHandler(notes.cancel_mode, pattern=r"^note:cancel$"))
-    application.add_handler(CallbackQueryHandler(reminders.list_reminders, pattern=r"^rem:list$"))
-    application.add_handler(CallbackQueryHandler(reminders.cancel_reminder, pattern=r"^rem:cancel:(\d+)$"))
-    application.add_handler(CallbackQueryHandler(reminders.pick_duration, pattern=r"^rem:dur:(\d+)$"))
-    application.add_handler(CallbackQueryHandler(reminders.ask_custom_duration, pattern=r"^rem:custom$"))
-    application.add_handler(CallbackQueryHandler(common.show_settings, pattern=r"^menu:settings$"))
-    application.add_handler(CallbackQueryHandler(common.show_lang_picker, pattern=r"^menu:lang$"))
-    application.add_handler(CallbackQueryHandler(common.show_profile, pattern=r"^menu:profile$"))
-    application.add_handler(CallbackQueryHandler(common.show_premium, pattern=r"^menu:premium$"))
-    application.add_handler(CallbackQueryHandler(common.show_help, pattern=r"^menu:help$"))
-    application.add_handler(CallbackQueryHandler(common.show_main_menu, pattern=r"^menu:main$"))
+    # Notes
+    application.add_handler(CallbackQueryHandler(banned_guard(notes.add_note_start), pattern=r"^note:add$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(notes.list_notes), pattern=r"^note:list$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(notes.delete_note), pattern=r"^note:del:(\d+)$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(notes.cancel_mode), pattern=r"^note:cancel$"))
+    # Reminders
+    application.add_handler(CallbackQueryHandler(banned_guard(reminders.list_reminders), pattern=r"^rem:list$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(reminders.cancel_reminder), pattern=r"^rem:cancel:(\d+)$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(reminders.pick_duration), pattern=r"^rem:dur:(\d+)$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(reminders.ask_custom_duration), pattern=r"^rem:custom$"))
+    # VIP / Premium
+    application.add_handler(CallbackQueryHandler(banned_guard(vip.show_premium), pattern=r"^menu:premium$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(vip.buy_vip), pattern=r"^vip:buy$"))
+    application.add_handler(PreCheckoutQueryHandler(vip.precheckout))
+    # Settings / misc
+    application.add_handler(CallbackQueryHandler(banned_guard(common.show_settings), pattern=r"^menu:settings$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(common.show_lang_picker), pattern=r"^menu:lang$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(common.show_profile), pattern=r"^menu:profile$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(common.show_help), pattern=r"^menu:help$"))
+    application.add_handler(CallbackQueryHandler(banned_guard(common.show_main_menu), pattern=r"^menu:main$"))
     application.add_handler(CallbackQueryHandler(common.noop, pattern=r"^noop$"))
+    # Admin panel (guards its own access)
+    application.add_handler(CallbackQueryHandler(admin.show_panel, pattern=r"^adm:panel$"))
+    application.add_handler(CallbackQueryHandler(admin.show_stats, pattern=r"^adm:stats$"))
+    application.add_handler(CallbackQueryHandler(admin.show_users, pattern=r"^adm:users$"))
+    application.add_handler(CallbackQueryHandler(admin.show_user, pattern=r"^adm:user:(\d+)$"))
+    application.add_handler(CallbackQueryHandler(admin.grant_vip, pattern=r"^adm:grant:(\d+)$"))
+    application.add_handler(CallbackQueryHandler(admin.revoke_vip, pattern=r"^adm:revoke:(\d+)$"))
+    application.add_handler(CallbackQueryHandler(admin.ban_user, pattern=r"^adm:ban:(\d+)$"))
+    application.add_handler(CallbackQueryHandler(admin.unban_user, pattern=r"^adm:unban:(\d+)$"))
+    application.add_handler(CallbackQueryHandler(admin.broadcast_start, pattern=r"^adm:broadcast$"))
+    application.add_handler(CallbackQueryHandler(admin.show_vip, pattern=r"^adm:vip$"))
+    application.add_handler(CallbackQueryHandler(admin.show_payments, pattern=r"^adm:payments$"))
 
     # ------------------------------------------------------------- messages --
+    # 0) Successful VIP payments (Stars).
+    application.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, vip.successful_payment))
     # 1) Photos: become note attachments when the user is adding a note.
     application.add_handler(MessageHandler(
         filters.ChatType.PRIVATE & filters.PHOTO, notes.capture_note_photo
     ))
-    # 2) Plain text: notes / reminder drafts, otherwise ignored.
+    # 2) Plain text: notes / reminders / admin / broadcast drafts, else nudge.
     application.add_handler(MessageHandler(
         filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, route_text
     ))
@@ -156,10 +185,14 @@ async def cancel_command(update: Update, context) -> None:
 
 
 async def route_text(update: Update, context) -> None:
-    """Notes draft → reminder draft → nothing."""
+    """Notes draft → reminder draft → admin password → broadcast → nudge."""
     if await notes.capture_note_text(update, context):
         return
     if await reminders.capture_reminder_text(update, context):
+        return
+    if await admin.capture_admin_password(update, context):
+        return
+    if await admin.capture_broadcast(update, context):
         return
     # Idle chat: a gentle nudge instead of silence.
     from handlers.helpers import get_lang as _gl

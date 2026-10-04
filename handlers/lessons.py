@@ -24,7 +24,7 @@ from config import XP_PER_CORRECT, XP_PER_LESSON
 from content.lessons import MODULES, TOTAL_LESSONS, get_lesson, get_module_by_lesson
 from keyboards import lesson_menu, modules_menu, module_menu, quiz_finished_menu
 from localization import t
-from handlers.helpers import get_lang, level_name
+from handlers.helpers import get_lang, level_name, vip_multiplier
 
 log = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ async def answer_question(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if is_right:
         state["score"] += 1
         if state.get("first_time"):
-            gained = XP_PER_CORRECT
+            gained = XP_PER_CORRECT * vip_multiplier(uid)
             db.add_xp(uid, gained)
 
     feedback = (
@@ -213,8 +213,9 @@ async def _finish_quiz(query, context, uid: int, lang: str, les: dict,
     bonus_line = ""
     if state.get("first_time"):
         db.mark_lesson_done(uid, lesson_id, score, total)
-        db.add_xp(uid, XP_PER_LESSON)
-        bonus_line = t(lang, "lesson_xp_bonus", xp=XP_PER_LESSON)
+        bonus = XP_PER_LESSON * vip_multiplier(uid)
+        db.add_xp(uid, bonus)
+        bonus_line = t(lang, "lesson_xp_bonus", xp=bonus)
 
     xp = db.get_user(uid)["xp"] or 0
     motivation = (

@@ -20,26 +20,29 @@ Built with **Python 3.10+** and **python-telegram-bot v21** (async) + SQLite.
 | 📝 **Notes** | Personal notes in text *or photo* form, list & delete with inline buttons |
 | ⏰ **Reminders** | `/remind 30m text` or guided flow with duration buttons; survives bot restarts |
 | 🌐 **Bilingual** | English + Uzbek everywhere, switchable via /lang or Settings |
-| ⭐ **Premium-ready** | Placeholder Premium section — ready for your monetization plans |
+| 🛡️ **Admin panel** | Password-protected `/admin`: stats, user cards, ban/unban, VIP grants, broadcast, payments |
+| 💎 **VIP monetization** | Real payments with **Telegram Stars**, auto-expiry, 2× XP perk, VIP badge |
 
 ## 📁 Project structure
 
 ```
 uzbhackhub_bot/
 ├── bot.py               # entry point: wiring, handlers, commands
-├── config.py            # token loading, XP settings, limits
-├── database.py          # SQLite layer (users, progress, notes, reminders)
+├── config.py            # token loading, admin, VIP, XP settings, limits
+├── database.py          # SQLite layer (users, progress, notes, reminders, payments)
 ├── localization.py      # all EN/UZ strings
-├── keyboards.py         # inline keyboards
+├── keyboards.py         # inline keyboards (user + admin + VIP)
 ├── content/
 │   └── lessons.py       # lesson & quiz content  ← add your lessons here
 ├── handlers/
-│   ├── common.py        # /start /menu /help /profile /lang /premium
+│   ├── common.py        # /start /menu /help /profile /lang
 │   ├── lessons.py       # lesson browser + quiz engine
 │   ├── notes.py         # notes (text + photo)
 │   ├── reminders.py     # reminder engine (JobQueue)
+│   ├── vip.py           # Telegram Stars payments + VIP fulfillment
+│   ├── admin.py         # admin panel: stats, users, ban, broadcast
 │   ├── media.py         # photo/voice/document fallback
-│   └── helpers.py       # levels, progress bar, sanitizers
+│   └── helpers.py       # levels, ban guard, XP multiplier, sanitizers
 ├── requirements.txt
 ├── Dockerfile
 ├── .env.example
@@ -54,7 +57,7 @@ python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env            # then paste your token into .env
+cp .env.example .env            # then paste your token + admin settings into .env
 python bot.py
 ```
 
@@ -141,8 +144,9 @@ Everything else (progress, XP, quizzes, menus) updates automatically.
 | `/remind 30m text` | Reminder in 30 minutes (`m`/`h`/`d` supported) |
 | `/profile` | XP, level, streak, progress |
 | `/lang` | Switch EN ⇄ UZ |
-| `/premium` | Premium section (monetization-ready) |
-| `/cancel` | Abort note/reminder input |
+| `/premium` | VIP plans + buy with Telegram Stars |
+| `/cancel` | Abort note/reminder/admin input |
+| `/admin` | 🛡️ Admin panel (password or ADMIN_IDS) |
 
 ## 🔐 Good practices baked in
 
@@ -152,14 +156,30 @@ Everything else (progress, XP, quizzes, menus) updates automatically.
 - Reminders persisted in SQLite and re-scheduled on restart
 - Non-root Docker user; database lives in `data/` (easy to mount as a Volume)
 
-## 💰 Monetization roadmap (Premium section)
+## 🛡️ Admin panel
 
-The Premium screen is already a wired-up placeholder. Natural next steps:
+Send `/admin` in the bot. Access is granted by either:
 
-1. **Payments** — Telegram Stars (`XTR`) or Payments API for one-time unlock
-2. **Gated content** — extra modules visible only to paying users (check a `is_premium` column)
-3. **Certificates** — auto-generated PDFs at 100% course completion
-4. **Referral system** — invite friends for bonus XP
+1. **Password** — set `ADMIN_PASSWORD` in `.env` (default `uzbhack-admin` — change it!)
+2. **Telegram ID** — add comma-separated IDs to `ADMIN_IDS` (no password needed)
 
-Ready for your ideas — the architecture keeps user data separate from content,
-so adding paid tiers is a small, safe change.
+Panel capabilities:
+
+| Section | What it does |
+|---------|--------------|
+| 📊 Statistics | Total/new/active users, active VIP, banned, Stars revenue |
+| 👥 Users | Recent users → tap for a card: XP, streak, VIP, ban status |
+| 💎 VIP | Grant/revoke VIP per user; shows price/duration config |
+| 🚫 Ban | Banned users are blocked at every entry point with a notice |
+| 📣 Broadcast | Sends a Markdown message to all non-banned users with a delivery report |
+| 💰 Payments | Last successful Stars payments + total revenue |
+
+## 💎 VIP with Telegram Stars
+
+1. In-bot: ⭐ Premium → **Buy VIP** → Telegram shows a Stars invoice
+2. User pays → `successful_payment` → VIP granted automatically (`VIP_DAYS`, extends on repeat)
+3. Perks while active: **2× XP** (`VIP_XP_MULTIPLIER`), 💎 badge in profile, status in the Premium panel
+4. All payments are stored in SQLite (`payments` table) and visible in the admin panel
+
+> ⚠️ Stars payments need **no payment provider** — but double-check that your bot
+> has no Payments provider configured conflict and test with a small price first.

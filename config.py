@@ -1,6 +1,6 @@
 """
 UZBHackHub — configuration module.
-Loads the bot token from environment variables or a local .env file.
+Loads settings from environment variables or a local .env file.
 """
 import os
 from pathlib import Path
@@ -41,6 +41,23 @@ if not BOT_TOKEN:
         "     - or export it:           export BOT_TOKEN=123456:ABC-xyz...\n"
         + "=" * 60
     )
+
+# ---------------------------------------------------------------------------
+# Admin settings
+# ---------------------------------------------------------------------------
+# Comma-separated Telegram user IDs that bypass the admin password entirely.
+ADMIN_IDS: set[int] = {
+    int(x) for x in os.environ.get("ADMIN_IDS", "").replace(" ", "").split(",") if x.isdigit()
+}
+# Password for /admin access when the user is not in ADMIN_IDS.
+ADMIN_PASSWORD: str = os.environ.get("ADMIN_PASSWORD", "").strip() or "uzbhack-admin"
+
+# ---------------------------------------------------------------------------
+# VIP / monetization settings
+# ---------------------------------------------------------------------------
+VIP_PRICE_STARS: int = int(os.environ.get("VIP_PRICE_STARS", "100"))   # Telegram Stars
+VIP_DAYS: int = int(os.environ.get("VIP_DAYS", "30"))                  # duration
+VIP_XP_MULTIPLIER: int = int(os.environ.get("VIP_XP_MULTIPLIER", "2")) # XP boost
 
 # ---------------------------------------------------------------------------
 # Gamification settings

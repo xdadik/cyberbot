@@ -126,6 +126,87 @@ STRINGS = {
         # -------------------------------------------------------------- errors --
         "err_generic": "😥 Something went wrong. Please try again or use /menu.",
         "err_not_registered": "👋 Please /start the bot first!",
+        # ----------------------------------------------------------- admin --
+        "admin_ask_pass": "🔐 *Admin access*\n\nSend the admin password:\n/cancel to abort.",
+        "admin_wrong_pass": "❌ Wrong password. Try /admin again.",
+        "admin_granted": "✅ Admin session granted.",
+        "admin_denied": "⛔ You are not an admin.",
+        "admin_panel": "🛡️ *Admin Panel*\n\nChoose a section:",
+        "btn_adm_stats": "📊 Statistics",
+        "btn_adm_users": "👥 Users",
+        "btn_adm_broadcast": "📣 Broadcast",
+        "btn_adm_vip": "💎 VIP",
+        "btn_adm_payments": "💰 Payments",
+        "btn_adm_back": "◀️ Panel",
+        "adm_stats": (
+            "📊 *Bot Statistics*\n\n"
+            "👥 Total users: *{total}*\n"
+            "🆕 New today: *{new_today}*\n"
+            "⚡ Active today: *{active_today}*\n"
+            "💎 Active VIP: *{vip_active}*\n"
+            "🚫 Banned: *{banned}*\n"
+            "💰 Revenue: *{revenue}* ⭐"
+        ),
+        "adm_users_title": "👥 *Recent users* — tap for actions:",
+        "adm_user_card": (
+            "👤 *User {uid}*\n\n"
+            "📛 {name}\n"
+            "🔗 @{username}\n"
+            "🌐 {lang}\n"
+            "⭐ {xp} XP · 🔥 {streak}d\n"
+            "💎 VIP: {vip}\n"
+            "🚫 Banned: {banned}\n"
+            "📅 Joined: {created}"
+        ),
+        "btn_adm_vipgrant": "💎 Grant VIP",
+        "btn_adm_viprevoke": "❌ Revoke VIP",
+        "btn_adm_ban": "🚫 Ban",
+        "btn_adm_unban": "✅ Unban",
+        "adm_banned": "🚫 User banned — they can no longer use the bot.",
+        "adm_unbanned": "✅ User unbanned.",
+        "adm_vip_granted": "💎 VIP granted until {until}.",
+        "adm_vip_revoked": "❌ VIP revoked.",
+        "adm_broadcast_prompt": "📣 Send me the message to broadcast to *{count}* users.\n\nMarkdown allowed. /cancel to abort.",
+        "adm_broadcast_done": "📣 Broadcast finished.\n\n✅ Delivered: *{ok}*\n❌ Failed: *{fail}* (blocked the bot)",
+        "adm_vip_panel": (
+            "💎 *VIP Management*\n\n"
+            "Price: *{price} ⭐ Stars*\n"
+            "Duration: *{days} days*\n"
+            "XP multiplier: *{mult}x*\n"
+            "Active VIP users: *{count}*\n\n"
+            "_Configure via env vars VIP_PRICE_STARS / VIP_DAYS_"
+        ),
+        "adm_payments": "💰 *Last payments:*\n\n{items}",
+        "adm_payments_empty": "💰 No payments yet. Share your Premium link! 🚀",
+        "adm_payment_item": "• {uid} — {amount} {currency} — {at}",
+        "adm_user_not_found": "⚠️ User not found in the database.",
+        # ------------------------------------------------------------- vip --
+        "vip_badge": "💎 VIP",
+        "vip_no": "—",
+        "vip_status_active": "🎉 You are VIP until {until}!",
+        "vip_status_none": "Your progress is saved — VIP simply unlocks more.",
+        "vip_invoice_title": "UZBHackHub VIP",
+        "vip_invoice_desc": "VIP access for {days} days: {mult}x XP, VIP badge, early access to new modules.",
+        "vip_until": "💎 VIP active until *{until}*",
+        "premium_text": (
+            "⭐ *UZBHackHub Premium*\n\n"
+            "Unlock your full hacker potential:\n\n"
+            "• ⚡ *{mult}x XP* on every quiz answer\n"
+            "• 💎 Exclusive VIP badge on your profile\n"
+            "• 🧠 Early access to new modules & labs\n"
+            "• 🏆 Priority support\n\n"
+            "💰 Price: *{price} ⭐ Stars* for *{days} days*\n"
+            "_{vip_line}_"
+        ),
+        "btn_buy_vip": "💎 Buy VIP — {price} ⭐",
+        "vip_purchase_success": (
+            "🎉 *Payment received — you are VIP now!*\n\n"
+            "💎 VIP active until: *{until}*\n"
+            "⚡ XP multiplier: *{mult}x*\n\n"
+            "Thank you for supporting UZBHackHub! 🚀"
+        ),
+        "err_payment_failed": "⚠️ Payment could not be confirmed. Please try again.",
+        "user_banned_msg": "⛔ You have been banned from this bot.\nIf you believe this is a mistake, contact the administrator.",
     },
 
     # ------------------------------------------------------------- uzbek --
@@ -250,6 +331,87 @@ STRINGS = {
         # -------------------------------------------------------------- errors --
         "err_generic": "😥 Xatolik yuz berdi. Qayta urinib ko'ring yoki /menu ni oching.",
         "err_not_registered": "👋 Avval botga /start bering!",
+        # ----------------------------------------------------------- admin --
+        "admin_ask_pass": "🔐 *Admin kirish*\n\nAdmin parolini yuboring:\nBekor qilish: /cancel",
+        "admin_wrong_pass": "❌ Parol xato. /admin ni qayta oching.",
+        "admin_granted": "✅ Admin sessiyasi ochildi.",
+        "admin_denied": "⛔ Siz admin emassiz.",
+        "admin_panel": "🛡️ *Admin Panel*\n\nBo'limni tanlang:",
+        "btn_adm_stats": "📊 Statistika",
+        "btn_adm_users": "👥 Foydalanuvchilar",
+        "btn_adm_broadcast": "📣 Xabar yuborish",
+        "btn_adm_vip": "💎 VIP",
+        "btn_adm_payments": "💰 To'lovlar",
+        "btn_adm_back": "◀️ Panel",
+        "adm_stats": (
+            "📊 *Bot statistikasi*\n\n"
+            "👥 Jami foydalanuvchilar: *{total}*\n"
+            "🆕 Bugun qo'shildi: *{new_today}*\n"
+            "⚡ Bugun faol: *{active_today}*\n"
+            "💎 Faol VIP: *{vip_active}*\n"
+            "🚫 Banlangan: *{banned}*\n"
+            "💰 Daromad: *{revenue}* ⭐"
+        ),
+        "adm_users_title": "👥 *Oxirgi foydalanuvchilar* — harakat uchun bosing:",
+        "adm_user_card": (
+            "👤 *Foydalanuvchi {uid}*\n\n"
+            "📛 {name}\n"
+            "🔗 @{username}\n"
+            "🌐 {lang}\n"
+            "⭐ {xp} XP · 🔥 {streak}k\n"
+            "💎 VIP: {vip}\n"
+            "🚫 Ban: {banned}\n"
+            "📅 Qo'shildi: {created}"
+        ),
+        "btn_adm_vipgrant": "💎 VIP berish",
+        "btn_adm_viprevoke": "❌ VIP olish",
+        "btn_adm_ban": "🚫 Ban",
+        "btn_adm_unban": "✅ Bandan olish",
+        "adm_banned": "🚫 Foydalanuvchi banlandi — endi botdan foydalana olmaydi.",
+        "adm_unbanned": "✅ Ban olib tashlandi.",
+        "adm_vip_granted": "💎 {until} gacha VIP berildi.",
+        "adm_vip_revoked": "❌ VIP olib tashlandi.",
+        "adm_broadcast_prompt": "📣 *{count}* ta foydalanuvchiga yuboriladigan xabarni yozing.\n\nMarkdown ishlaydi. Bekor qilish: /cancel",
+        "adm_broadcast_done": "📣 Xabar yuborildi.\n\n✅ Yetkazildi: *{ok}*\n❌ Yetkazilmadi: *{fail}* (botni bloklaganlar)",
+        "adm_vip_panel": (
+            "💎 *VIP boshqaruvi*\n\n"
+            "Narx: *{price} ⭐ Stars*\n"
+            "Muddat: *{days} kun*\n"
+            "XP koeffitsienti: *{mult}x*\n"
+            "Faol VIP: *{count}* ta\n\n"
+            "_Sozlash: VIP_PRICE_STARS / VIP_DAYS env o'zgaruvchilari_"
+        ),
+        "adm_payments": "💰 *Oxirgi to'lovlar:*\n\n{items}",
+        "adm_payments_empty": "💰 Hozircha to'lov yo'q. Premium havolangizni ulashing! 🚀",
+        "adm_payment_item": "• {uid} — {amount} {currency} — {at}",
+        "adm_user_not_found": "⚠️ Foydalanuvchi bazada topilmadi.",
+        # ------------------------------------------------------------- vip --
+        "vip_badge": "💎 VIP",
+        "vip_no": "—",
+        "vip_status_active": "🎉 Siz {until} gacha VIPsiz!",
+        "vip_status_none": "Natijalaringiz saqlangan — VIP ularni faqat kengaytiradi.",
+        "vip_invoice_title": "UZBHackHub VIP",
+        "vip_invoice_desc": "{days} kunlik VIP: {mult}x XP, VIP belgisi, yangi modullarga erta kirish.",
+        "vip_until": "💎 {until} gacha VIP",
+        "premium_text": (
+            "⭐ *UZBHackHub Premium*\n\n"
+            "To'liq xaker salohiyatingizni oching:\n\n"
+            "• ⚡ Har bir javob uchun *{mult}x XP*\n"
+            "• 💎 Profilda eksklyuziv VIP belgisi\n"
+            "• 🧠 Yangi modullarga erta kirish\n"
+            "• 🏆 Ustuvor yordam\n\n"
+            "💰 Narx: *{days} kun — {price} ⭐ Stars*\n"
+            "_{vip_line}_"
+        ),
+        "btn_buy_vip": "💎 VIP olish — {price} ⭐",
+        "vip_purchase_success": (
+            "🎉 *To'lov qabul qilindi — endi siz VIP!*\n\n"
+            "💎 VIP muddati: *{until}* gacha\n"
+            "⚡ XP koeffitsienti: *{mult}x*\n\n"
+            "UZBHackHub'ni qo'llab-quvvatlaganingiz uchun rahmat! 🚀"
+        ),
+        "err_payment_failed": "⚠️ To'lov tasdiqlanmadi. Qayta urinib ko'ring.",
+        "user_banned_msg": "⛔ Siz bu botdan banlangansiz.\nXato deb hisoblasangiz, administrator bilan bog'laning.",
     },
 }
 

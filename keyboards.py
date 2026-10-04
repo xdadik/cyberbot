@@ -193,3 +193,63 @@ def reminders_list(lang: str, reminders) -> InlineKeyboardMarkup:
         ])
     rows.append([InlineKeyboardButton(t(lang, "btn_back"), callback_data="menu:reminders")])
     return InlineKeyboardMarkup(rows)
+
+
+# ------------------------------------------------------------------ admin --
+
+def admin_panel(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(t(lang, "btn_adm_stats"), callback_data="adm:stats"),
+                InlineKeyboardButton(t(lang, "btn_adm_users"), callback_data="adm:users"),
+            ],
+            [
+                InlineKeyboardButton(t(lang, "btn_adm_broadcast"), callback_data="adm:broadcast"),
+                InlineKeyboardButton(t(lang, "btn_adm_vip"), callback_data="adm:vip"),
+            ],
+            [
+                InlineKeyboardButton(t(lang, "btn_adm_payments"), callback_data="adm:payments"),
+            ],
+        ]
+    )
+
+
+def admin_user_actions(lang: str, uid: int, is_vip: bool, banned: bool) -> InlineKeyboardMarkup:
+    vip_btn = (
+        InlineKeyboardButton(t(lang, "btn_adm_viprevoke"), callback_data=f"adm:revoke:{uid}")
+        if is_vip
+        else InlineKeyboardButton(t(lang, "btn_adm_vipgrant"), callback_data=f"adm:grant:{uid}")
+    )
+    ban_btn = (
+        InlineKeyboardButton(t(lang, "btn_adm_unban"), callback_data=f"adm:unban:{uid}")
+        if banned
+        else InlineKeyboardButton(t(lang, "btn_adm_ban"), callback_data=f"adm:ban:{uid}")
+    )
+    return InlineKeyboardMarkup(
+        [
+            [vip_btn],
+            [ban_btn],
+            [InlineKeyboardButton(t(lang, "btn_adm_users"), callback_data="adm:users"),
+             InlineKeyboardButton(t(lang, "btn_adm_back"), callback_data="adm:panel")],
+        ]
+    )
+
+
+def admin_back(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [[InlineKeyboardButton(t(lang, "btn_adm_back"), callback_data="adm:panel")]]
+    )
+
+
+# -------------------------------------------------------------------- vip --
+
+def premium_menu(lang: str, price: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton(
+                t(lang, "btn_buy_vip", price=price), callback_data="vip:buy"
+            )],
+            [InlineKeyboardButton(t(lang, "btn_menu"), callback_data="menu:main")],
+        ]
+    )

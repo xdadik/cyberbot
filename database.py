@@ -1,7 +1,7 @@
 """
 UZBHackHub — SQLite database layer.
 Simple synchronous sqlite3 wrapper (fast enough for a learning bot),
-thread-safe via a lock.
+thread-safe via a reentrant lock. Includes automatic migrations.
 """
 import sqlite3
 import threading
@@ -38,7 +38,10 @@ def _init_schema(conn: sqlite3.Connection) -> None:
             xp           INTEGER DEFAULT 0,
             streak       INTEGER DEFAULT 1,
             last_active  TEXT,
-            created_at   TEXT DEFAULT (datetime('now'))
+            created_at   TEXT DEFAULT (datetime('now')),
+            is_vip       INTEGER DEFAULT 0,
+            vip_until    TEXT,
+            banned       INTEGER DEFAULT 0
         );
 
         CREATE TABLE IF NOT EXISTS progress (
@@ -66,9 +69,31 @@ def _init_schema(conn: sqlite3.Connection) -> None:
             done         INTEGER DEFAULT 0,
             created_at   TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS payments (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id      INTEGER NOT NULL,
+            charge_id    TEXT UNIQUE,
+            amount       INTEGER,
+            currency     TEXT DEFAULT 'XTR',
+            created_at   TEXT DEFAULT (datetime('now'))
+        );
         """
     )
+    _migrate(conn)
     conn.commit()
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Add columns introduced after the first release (idempotent)."""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()}
+    for col, ddl in (
+        ("is_vip", "ALTER TABLE users ADD COLUMN is_vip INTEGER DEFAULT 0"),
+        ("vip_until", "ALTER TABLE users ADD COLUMN vip_until TEXT"),
+        ("banned", "ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0"),
+    ):
+        if col not in cols:
+            conn.execute(ddl)
 
 
 # ------------------------------------------------------------------ users --
@@ -154,6 +179,68 @@ def touch_streak(uid: int) -> int:
         )
         conn.commit()
     return streak
+
+
+# ------------------------------------------------------- vip & moderation --
+
+def set_vip(uid: int, days: int) -> str:
+    """Grant VIP for `days` from now (extends if already active). Returns ISO expiry."""
+    now = datetime.now(timezone.utc)
+    with _lock:
+        conn = get_conn()
+        row = conn.execute("SELECT vip_until FROM users WHERE id = ?", (uid,)).fetchone()
+        base = now
+        if row and row["vip_until"]:
+            try:
+                until = datetime.fromisoformat(row["vip_until"])
+                if until.tzinfo is None:
+                    until = until.replace(tzinfo=timezone.utc)
+                if until > now:
+                    base = until
+            except ValueError:
+                pass
+        new_until = base + timedelta(days=days)
+        conn.execute(
+            "UPDATE users SET is_vip = 1, vip_until = ? WHERE id = ?",
+            (new_until.isoformat(timespec="seconds"), uid),
+        )
+        conn.commit()
+    return new_until.isoformat(timespec="seconds")
+
+
+def revoke_vip(uid: int) -> None:
+    with _lock:
+        conn = get_conn()
+        conn.execute("UPDATE users SET is_vip = 0, vip_until = NULL WHERE id = ?", (uid,))
+        conn.commit()
+
+
+def vip_active(row: sqlite3.Row | None) -> bool:
+    """True when the user has an unexpired VIP subscription."""
+    if not row or not row["is_vip"]:
+        return False
+    if not row["vip_until"]:
+        return False
+    try:
+        until = datetime.fromisoformat(row["vip_until"])
+    except (ValueError, TypeError):
+        return False
+    if until.tzinfo is None:
+        until = until.replace(tzinfo=timezone.utc)
+    return until > datetime.now(timezone.utc)
+
+
+def set_banned(uid: int, banned: bool) -> None:
+    with _lock:
+        conn = get_conn()
+        conn.execute("UPDATE users SET banned = ? WHERE id = ?", (1 if banned else 0, uid))
+        conn.commit()
+
+
+def is_banned(uid: int) -> bool:
+    with _lock:
+        row = get_conn().execute("SELECT banned FROM users WHERE id = ?", (uid,)).fetchone()
+    return bool(row and row["banned"])
 
 
 # --------------------------------------------------------------- progress --
@@ -287,6 +374,84 @@ def get_pending_reminders() -> list[sqlite3.Row]:
             "SELECT * FROM reminders WHERE done = 0"
         ).fetchall()
     return rows
+
+
+# ----------------------------------------------------- payments (VIP) -----
+
+def record_payment(uid: int, charge_id: str, amount: int, currency: str = "XTR") -> None:
+    """Store a successful payment. charge_id is UNIQUE — duplicates are ignored."""
+    with _lock:
+        conn = get_conn()
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO payments (user_id, charge_id, amount, currency)
+            VALUES (?, ?, ?, ?)
+            """,
+            (uid, charge_id, amount, currency),
+        )
+        conn.commit()
+
+
+def list_payments(limit: int = 10) -> list[sqlite3.Row]:
+    with _lock:
+        rows = get_conn().execute(
+            "SELECT * FROM payments ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return rows
+
+
+def total_revenue() -> int:
+    with _lock:
+        row = get_conn().execute("SELECT COALESCE(SUM(amount), 0) AS s FROM payments").fetchone()
+    return row["s"] if row else 0
+
+
+# ------------------------------------------------------------ admin stats --
+
+def admin_stats() -> dict:
+    with _lock:
+        conn = get_conn()
+        now = datetime.now(timezone.utc)
+
+        total = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
+        banned = conn.execute("SELECT COUNT(*) AS c FROM users WHERE banned = 1").fetchone()["c"]
+        new_today = conn.execute(
+            "SELECT COUNT(*) AS c FROM users WHERE date(created_at) = date(?)",
+            (now.date().isoformat(),),
+        ).fetchone()["c"]
+        active_today = conn.execute(
+            "SELECT COUNT(*) AS c FROM users WHERE date(last_active) = date(?)",
+            (now.date().isoformat(),),
+        ).fetchone()["c"]
+
+        vip_active_count = 0
+        for row in conn.execute("SELECT is_vip, vip_until FROM users WHERE is_vip = 1").fetchall():
+            if vip_active(row):
+                vip_active_count += 1
+
+        return {
+            "total": total,
+            "banned": banned,
+            "new_today": new_today,
+            "active_today": active_today,
+            "vip_active": vip_active_count,
+            "revenue": total_revenue(),
+        }
+
+
+def recent_users(limit: int = 10) -> list[sqlite3.Row]:
+    with _lock:
+        rows = get_conn().execute(
+            "SELECT * FROM users ORDER BY last_active DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return rows
+
+
+def all_user_ids(include_banned: bool = False) -> list[int]:
+    q = "SELECT id FROM users" + ("" if include_banned else " WHERE banned = 0")
+    with _lock:
+        rows = get_conn().execute(q).fetchall()
+    return [r["id"] for r in rows]
 
 
 # ---------------------------------------------------------------- utility --

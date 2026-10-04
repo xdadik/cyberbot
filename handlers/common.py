@@ -9,7 +9,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 import database as db
-from config import MAX_NOTES, MAX_REMINDERS
+from config import MAX_NOTES, MAX_REMINDERS, XP_PER_LEVEL
 from content.lessons import TOTAL_LESSONS
 from keyboards import (
     back_to_menu,
@@ -18,7 +18,7 @@ from keyboards import (
     settings_menu,
 )
 from localization import t, lang_display
-from handlers.helpers import get_lang, level_name, md_clean, progress_bar
+from handlers.helpers import fmt_date, get_lang, level_name, md_clean, progress_bar
 
 log = logging.getLogger(__name__)
 
@@ -31,12 +31,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     lang = row["lang"] or "en"
     name = md_clean(user.first_name) or "friend"
 
+    if db.is_banned(uid):
+        await update.effective_message.reply_text(t(lang, "user_banned_msg"))
+        return
+
     if context.user_data.get("greeted"):
         xp = row["xp"] or 0
         streak = row["streak"] or 1
         await update.effective_message.reply_text(
             t(lang, "welcome_back", name=name, streak=streak, xp=xp,
-              level=1 + xp // 100, level_name=level_name(lang, xp)),
+              level=1 + xp // XP_PER_LEVEL, level_name=level_name(lang, xp)),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=main_menu(lang),
         )
@@ -139,21 +143,24 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     progress = db.get_progress(uid)
     done = len(progress)
     xp = row["xp"] or 0
+    text = t(
+        lang,
+        "profile_text",
+        uid=uid,
+        name=md_clean(row["first_name"] or update.effective_user.first_name or "—"),
+        lang=lang_display(row["lang"] or "en"),
+        xp=xp,
+        level=1 + xp // XP_PER_LEVEL,
+        level_name=level_name(lang, xp),
+        streak=row["streak"] or 1,
+        done=done,
+        total=TOTAL_LESSONS,
+        bar=progress_bar(done, TOTAL_LESSONS),
+    )
+    if db.vip_active(row):
+        text += "\n\n" + t(lang, "vip_until", until=fmt_date(row["vip_until"]))
     await update.effective_message.reply_text(
-        t(
-            lang,
-            "profile_text",
-            uid=uid,
-            name=md_clean(row["first_name"] or update.effective_user.first_name or "—"),
-            lang=lang_display(row["lang"] or "en"),
-            xp=xp,
-            level=1 + xp // 100,
-            level_name=level_name(lang, xp),
-            streak=row["streak"] or 1,
-            done=done,
-            total=TOTAL_LESSONS,
-            bar=progress_bar(done, TOTAL_LESSONS),
-        ),
+        text,
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=back_to_menu(lang),
     )
@@ -171,39 +178,26 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     progress = db.get_progress(uid)
     done = len(progress)
     xp = row["xp"] or 0
+    text = t(
+        lang,
+        "profile_text",
+        uid=uid,
+        name=md_clean(row["first_name"] or update.effective_user.first_name or "—"),
+        lang=lang_display(row["lang"] or "en"),
+        xp=xp,
+        level=1 + xp // XP_PER_LEVEL,
+        level_name=level_name(lang, xp),
+        streak=row["streak"] or 1,
+        done=done,
+        total=TOTAL_LESSONS,
+        bar=progress_bar(done, TOTAL_LESSONS),
+    )
+    if db.vip_active(row):
+        text += "\n\n" + t(lang, "vip_until", until=fmt_date(row["vip_until"]))
     await query.edit_message_text(
-        t(
-            lang,
-            "profile_text",
-            uid=uid,
-            name=md_clean(row["first_name"] or update.effective_user.first_name or "—"),
-            lang=lang_display(row["lang"] or "en"),
-            xp=xp,
-            level=1 + xp // 100,
-            level_name=level_name(lang, xp),
-            streak=row["streak"] or 1,
-            done=done,
-            total=TOTAL_LESSONS,
-            bar=progress_bar(done, TOTAL_LESSONS),
-        ),
+        text,
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=back_to_menu(lang),
-    )
-
-
-async def premium(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    lang = get_lang(update.effective_user.id)
-    await update.effective_message.reply_text(
-        t(lang, "premium_text"), parse_mode=ParseMode.MARKDOWN, reply_markup=back_to_menu(lang)
-    )
-
-
-async def show_premium(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
-    lang = get_lang(update.effective_user.id)
-    await query.edit_message_text(
-        t(lang, "premium_text"), parse_mode=ParseMode.MARKDOWN, reply_markup=back_to_menu(lang)
     )
 
 
